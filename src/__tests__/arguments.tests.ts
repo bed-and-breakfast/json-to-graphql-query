@@ -20,7 +20,10 @@ describe('jsonToGraphQLQuery() - arguments', () => {
         };
         expect(jsonToGraphQLQuery(query, { pretty: true })).to.equal(
             `query {
-    Posts (orderBy: "post_date", userId: 12) {
+    Posts (
+        orderBy: "post_date",
+        userId: 12
+    ) {
         id
         title
         post_date
@@ -47,7 +50,13 @@ describe('jsonToGraphQLQuery() - arguments', () => {
         };
         expect(jsonToGraphQLQuery(query, { pretty: true })).to.equal(
             `query {
-    Posts (where: {published: true, rating: {_gt: 3}}, orderBy: "post_date") {
+    Posts (
+        where: {
+            published: true,
+            rating: { _gt: 3 }
+        },
+        orderBy: "post_date"
+    ) {
         id
         title
         post_date
@@ -74,7 +83,13 @@ describe('jsonToGraphQLQuery() - arguments', () => {
         };
         expect(jsonToGraphQLQuery(query, { pretty: true })).to.equal(
             `query {
-    Posts (or: [{published: true}, {rating: [{_gt: 3}]}], orderBy: "post_date") {
+    Posts (
+        or: [
+            { published: true },
+            { rating: [ { _gt: 3 } ] }
+        ],
+        orderBy: "post_date"
+    ) {
         id
         title
         post_date
@@ -100,7 +115,10 @@ describe('jsonToGraphQLQuery() - arguments', () => {
         } as any;
         expect(jsonToGraphQLQuery(query, { pretty: true })).to.equal(
             `query {
-    Posts (where: {id: null}, orderBy: null) {
+    Posts (
+        where: { id: null },
+        orderBy: null
+    ) {
         id
         title
         post_date
@@ -131,7 +149,10 @@ describe('jsonToGraphQLQuery() - arguments', () => {
         };
         expect(jsonToGraphQLQuery(query, { pretty: true })).to.equal(
             `query {
-    Posts (arg1: 20, arg2: "flibble") {
+    Posts (
+        arg1: 20,
+        arg2: "flibble"
+    ) {
         id
         title
         comments (offensiveOnly: true) {

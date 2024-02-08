@@ -31,7 +31,10 @@ describe('VariableType()', () => {
         };
         expect(jsonToGraphQLQuery(query, { pretty: true })).to.equal(
 `query ($someString: String!, $varWithDefault: String = "default_value") {
-    Posts (arg1: 20, arg2: $someString) {
+    Posts (
+        arg1: 20,
+        arg2: $someString
+    ) {
         id
         title
         comments (offensiveOnly: true) {
