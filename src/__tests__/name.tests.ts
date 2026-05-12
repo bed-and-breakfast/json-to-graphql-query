@@ -71,10 +71,7 @@ describe('jsonToGraphQLQuery() - combinations', () => {
         };
         expect(jsonToGraphQLQuery(query, { pretty: true })).to.equal(
             `query NewName {
-    Posts (
-        arg1: 20,
-        arg2: $variable1
-    ) {
+    Posts (arg1: 20, arg2: $variable1) {
         id
         title
     }
@@ -103,10 +100,7 @@ describe('jsonToGraphQLQuery() - combinations', () => {
         };
         expect(jsonToGraphQLQuery(query, { pretty: true })).to.equal(
             `query NewName ($variable1: String!, $variableWithDefault: String = "default_value") {
-    Posts (
-        arg1: 20,
-        arg2: $variable1
-    ) {
+    Posts (arg1: 20, arg2: $variable1) {
         id
         title
     }
@@ -182,11 +176,7 @@ describe('jsonToGraphQLQuery() - combinations', () => {
         };
         expect(jsonToGraphQLQuery(query, { pretty: true })).to.equal(
             `query NewName ($someString: String!, $varWithDefault: String = "default_value") {
-    one: Posts (
-        arg1: 20,
-        arg2: $someString,
-        status: PUBLISHED
-    ) {
+    one: Posts (arg1: 20, arg2: $someString, status: PUBLISHED) {
         id
         title
         comments (offensiveOnly: true) {
@@ -195,10 +185,7 @@ describe('jsonToGraphQLQuery() - combinations', () => {
             user
         }
     }
-    Post (
-        arg1: 20,
-        arg2: $someString
-    ) {
+    Post (arg1: 20, arg2: $someString) {
         title
         comments (offensiveOnly: true) {
             id
@@ -209,10 +196,7 @@ describe('jsonToGraphQLQuery() - combinations', () => {
             id
         }
     }
-    Posts (
-        arg1: 20,
-        arg2: $someString
-    ) {
+    Posts (arg1: 20, arg2: $someString) {
         id
         title
         comments (offensiveOnly: true) {

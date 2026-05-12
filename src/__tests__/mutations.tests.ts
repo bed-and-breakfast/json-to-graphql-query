@@ -34,10 +34,7 @@ describe('jsonToGraphQLQuery() - mutations', () => {
         };
         expect(jsonToGraphQLQuery(query, { pretty: true })).to.equal(
             `mutation {
-    create_post (
-        title: "My Awesome Post",
-        body: "This post is awesome!"
-    )
+    create_post (title: "My Awesome Post", body: "This post is awesome!")
 }`);
     });
 

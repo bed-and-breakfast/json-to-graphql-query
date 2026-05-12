@@ -5,7 +5,7 @@ export const configFields = [
     '__args', '__alias', '__aliasFor', '__variables', '__directives', '__on', '__all_on', '__typeName', '__name'
 ];
 
-function stringify(obj_from_json: any, options: IJsonToGraphQLOptions, level = 0): string {
+function stringify(obj_from_json: any): string {
     if (obj_from_json instanceof EnumType) {
         return obj_from_json.value;
     }
@@ -19,54 +19,24 @@ function stringify(obj_from_json: any, options: IJsonToGraphQLOptions, level = 0
         return JSON.stringify(obj_from_json);
     }
     else if (Array.isArray(obj_from_json)) {
-        if (options.pretty) {
-            const indentLevel = level - 1 >= 0 ? level - 1 : 0;
-
-            return obj_from_json.length > 1
-                ? `[\n${obj_from_json.map((item) => getIndent(level) + stringify(item, options, level)).join(',\n')}\n${getIndent(indentLevel)}]`
-                : `[ ${obj_from_json.map((item) => stringify(item, options, level)).join(', ')} ]` ;
-        }
-
-        return `[${obj_from_json.map((item) => stringify(item, options, level)).join(', ')}]`;
+        return `[${obj_from_json.map((item) => stringify(item)).join(', ')}]`;
     }
     // Implements recursive object serialization according to JSON spec
     // but without quotes around the keys.
     const props: string = Object
         .keys(obj_from_json)
-        .map((key) => {
-            const stringifiedKey = `${key}: ${stringify(obj_from_json[key], options, level + 1)}`;
+        .map((key) => `${key}: ${stringify(obj_from_json[key])}`)
+        .join(', ');
 
-            if (options.pretty) {
-                return (Object.keys(obj_from_json).length > 1 ? getIndent(level) : '') + stringifiedKey
-            }
-
-            return stringifiedKey
-           }
-        )
-        .join(options.pretty ? ',\n' : ', ');
-
-    if (options.pretty) {
-        const indentLevel = level - 1 >= 0 ? level - 1 : 0;
-
-        return Object
-            .keys(obj_from_json).length > 1 ? `{\n${props}\n${getIndent(indentLevel)}}` : `{ ${props} }`;
-    }
-
-    return `{${props}}`
+    return `{${props}}`;
 }
 
-function buildArgs(argsObj: any, options: IJsonToGraphQLOptions, level = 0): string {
+function buildArgs(argsObj: any): string {
     const args = [];
     for (const argName in argsObj) {
-        if (options.pretty) {
-            const indent = Object.keys(argsObj).length > 1 ? getIndent(level + 1) : '';
-            args.push(`${indent}${argName}: ${stringify(argsObj[argName], options, level + 2)}`);
-        } else {
-            args.push(`${argName}: ${stringify(argsObj[argName], options, level)}`);
-        }
+        args.push(`${argName}: ${stringify(argsObj[argName])}`);
     }
-
-    return args.join(options.pretty ? ',\n' : ', ');
+    return args.join(', ');
 }
 
 function buildVariables(varsObj: any): string {
@@ -77,7 +47,7 @@ function buildVariables(varsObj: any): string {
     return args.join(', ');
 }
 
-function buildDirectives(dirsObj: any, options: IJsonToGraphQLOptions, level = 0): string {
+function buildDirectives(dirsObj: any): string {
     const directiveName = Object.keys(dirsObj)[0];
     const directiveValue = dirsObj[directiveName];
     if (typeof directiveValue === 'boolean' || (typeof directiveValue === 'object' && Object.keys(directiveValue).length === 0)) {
@@ -86,7 +56,7 @@ function buildDirectives(dirsObj: any, options: IJsonToGraphQLOptions, level = 0
     else if (typeof directiveValue === 'object') {
         const args = [];
         for (const argName in directiveValue) {
-            const argVal = stringify(directiveValue[argName], options, level).replace(/"/g, '');
+            const argVal = stringify(directiveValue[argName]).replace(/"/g, '');
             args.push(`${argName}: ${argVal}`);
         }
         return `${directiveName}(${args.join(', ')})`;
@@ -152,15 +122,11 @@ function convertQuery(node: any, level: number, output: [string, number][], opti
                     let dirsStr = '';
                     if (directivesExist) {
                         dirsStr = Object.entries(value.__directives)
-                            .map(item => `@${buildDirectives({ [item[0]]: item[1] }, options, level + 1)}`)
+                            .map(item => `@${buildDirectives({ [item[0]]: item[1] })}`)
                             .join(' ')
                     }
                     if (argsExist) {
-                        if (options.pretty && Object.keys(value.__args).length > 1) {
-                            argsStr = `(\n${buildArgs(value.__args, options, level)}\n${getIndent(level)})`;
-                        } else {
-                            argsStr = `(${buildArgs(value.__args, options)})`;
-                        }
+                        argsStr = `(${buildArgs(value.__args)})`;
                     }
                     const spacer = directivesExist && argsExist ? ' ' : '';
                     token = `${token} ${argsStr}${spacer}${dirsStr}`;

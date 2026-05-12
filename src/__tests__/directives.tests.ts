@@ -25,10 +25,7 @@ describe('jsonToGraphQLQuery() - directives', () => {
         } as any;
         expect(jsonToGraphQLQuery(query, { pretty: true })).to.equal(
             `query {
-    Posts (
-        where: { id: 10 },
-        orderBy: "flibble"
-    ) @client {
+    Posts (where: {id: 10}, orderBy: "flibble") @client {
         id
         title
         post_date
@@ -99,14 +96,7 @@ describe('jsonToGraphQLQuery() - directives', () => {
         } as any;
         expect(jsonToGraphQLQuery(query, { pretty: true })).to.equal(
             `query {
-    Posts (
-        where: { id: 10 },
-        orderBy: "flibble"
-    ) @client @withArgs(id: [
-        1,
-        2,
-        3
-    ]) {
+    Posts (where: {id: 10}, orderBy: "flibble") @client @withArgs(id: [1, 2, 3]) {
         id
         title
         post_date
@@ -137,10 +127,7 @@ describe('jsonToGraphQLQuery() - directives', () => {
         } as any;
         expect(jsonToGraphQLQuery(query, { pretty: true })).to.equal(
             `query {
-    Posts (
-        where: { id: 10 },
-        orderBy: "flibble"
-    ) @client @withArgs {
+    Posts (where: {id: 10}, orderBy: "flibble") @client @withArgs {
         id
         title
         post_date
