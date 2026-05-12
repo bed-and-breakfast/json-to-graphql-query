@@ -2,10 +2,18 @@ import { EnumType } from './types/EnumType';
 import { VariableType } from './types/VariableType';
 
 export const configFields = [
-    '__args', '__alias', '__aliasFor', '__variables', '__directives', '__on', '__all_on', '__typeName', '__name'
+    '__args',
+    '__alias',
+    '__aliasFor',
+    '__variables',
+    '__directives',
+    '__on',
+    '__all_on',
+    '__typeName',
+    '__name',
 ];
 
-function stringify(obj_from_json: any, options: IJsonToGraphQLOptions, level = 0): string {
+function stringify(obj_from_json: any): string {
     if (obj_from_json instanceof EnumType) {
         return obj_from_json.value;
     }
@@ -17,56 +25,24 @@ function stringify(obj_from_json: any, options: IJsonToGraphQLOptions, level = 0
     else if (typeof obj_from_json !== 'object' || obj_from_json === null) {
         // not an object, stringify using native function
         return JSON.stringify(obj_from_json);
-    }
-    else if (Array.isArray(obj_from_json)) {
-        if (options.pretty) {
-            const indentLevel = level - 1 >= 0 ? level - 1 : 0;
-
-            return obj_from_json.length > 1
-                ? `[\n${obj_from_json.map((item) => getIndent(level) + stringify(item, options, level)).join(',\n')}\n${getIndent(indentLevel)}]`
-                : `[ ${obj_from_json.map((item) => stringify(item, options, level)).join(', ')} ]` ;
-        }
-
-        return `[${obj_from_json.map((item) => stringify(item, options, level)).join(', ')}]`;
+    } else if (Array.isArray(obj_from_json)) {
+        return `[${obj_from_json.map((item) => stringify(item)).join(', ')}]`;
     }
     // Implements recursive object serialization according to JSON spec
     // but without quotes around the keys.
-    const props: string = Object
-        .keys(obj_from_json)
-        .map((key) => {
-            const stringifiedKey = `${key}: ${stringify(obj_from_json[key], options, level + 1)}`;
+    const props: string = Object.keys(obj_from_json)
+        .map((key) => `${key}: ${stringify(obj_from_json[key])}`)
+        .join(', ');
 
-            if (options.pretty) {
-                return (Object.keys(obj_from_json).length > 1 ? getIndent(level) : '') + stringifiedKey
-            }
-
-            return stringifiedKey
-           }
-        )
-        .join(options.pretty ? ',\n' : ', ');
-
-    if (options.pretty) {
-        const indentLevel = level - 1 >= 0 ? level - 1 : 0;
-
-        return Object
-            .keys(obj_from_json).length > 1 ? `{\n${props}\n${getIndent(indentLevel)}}` : `{ ${props} }`;
-    }
-
-    return `{${props}}`
+    return `{${props}}`;
 }
 
-function buildArgs(argsObj: any, options: IJsonToGraphQLOptions, level = 0): string {
+function buildArgs(argsObj: any): string {
     const args = [];
     for (const argName in argsObj) {
-        if (options.pretty) {
-            const indent = Object.keys(argsObj).length > 1 ? getIndent(level + 1) : '';
-            args.push(`${indent}${argName}: ${stringify(argsObj[argName], options, level + 2)}`);
-        } else {
-            args.push(`${argName}: ${stringify(argsObj[argName], options, level)}`);
-        }
+        args.push(`${argName}: ${stringify(argsObj[argName])}`);
     }
-
-    return args.join(options.pretty ? ',\n' : ', ');
+    return args.join(', ');
 }
 
 function buildVariables(varsObj: any): string {
@@ -77,43 +53,57 @@ function buildVariables(varsObj: any): string {
     return args.join(', ');
 }
 
-function buildDirectives(dirsObj: any, options: IJsonToGraphQLOptions, level = 0): string {
+function buildDirectives(dirsObj: any): string {
     const directiveName = Object.keys(dirsObj)[0];
     const directiveValue = dirsObj[directiveName];
-    if (typeof directiveValue === 'boolean' || (typeof directiveValue === 'object' && Object.keys(directiveValue).length === 0)) {
+    if (
+        typeof directiveValue === 'boolean' ||
+        (typeof directiveValue === 'object' &&
+            Object.keys(directiveValue).length === 0)
+    ) {
         return directiveName;
-    }
-    else if (typeof directiveValue === 'object') {
+    } else if (typeof directiveValue === 'object') {
         const args = [];
         for (const argName in directiveValue) {
-            const argVal = stringify(directiveValue[argName], options, level).replace(/"/g, '');
+            const argVal = stringify(directiveValue[argName]).replace(/"/g, '');
             args.push(`${argName}: ${argVal}`);
         }
         return `${directiveName}(${args.join(', ')})`;
-    }
-    else {
-        throw new Error(`Unsupported type for directive: ${typeof directiveValue}. Types allowed: object, boolean.\n` +
-            `Offending object: ${JSON.stringify(dirsObj)}`);
+    } else {
+        throw new Error(
+            `Unsupported type for directive: ${typeof directiveValue}. Types allowed: object, boolean.\n` +
+                `Offending object: ${JSON.stringify(dirsObj)}`
+        );
     }
 }
 
 function getIndent(level: number): string {
-    return Array((level * 4) + 1).join(' ');
+    return Array(level * 4 + 1).join(' ');
 }
 
 function filterNonConfigFields(fieldName: string, ignoreFields: string[]) {
     // Returns true if fieldName is not a 'configField'.
-    return configFields.indexOf(fieldName) == -1 && ignoreFields.indexOf(fieldName) == -1;
+    return (
+        configFields.indexOf(fieldName) == -1 &&
+        ignoreFields.indexOf(fieldName) == -1
+    );
 }
 
-function convertQuery(node: any, level: number, output: [string, number][], options: IJsonToGraphQLOptions) {
+function convertQuery(
+    node: any,
+    level: number,
+    output: [string, number][],
+    options: IJsonToGraphQLOptions
+) {
     Object.keys(node)
         .filter((key) => filterNonConfigFields(key, options.ignoreFields!))
         .forEach((key) => {
             let value = node[key];
             if (typeof value === 'object') {
                 if (Array.isArray(value)) {
-                    value = value.find((item) => item && typeof item === 'object');
+                    value = value.find(
+                        (item) => item && typeof item === 'object'
+                    );
                     if (!value) {
                         output.push([`${key}`, level]);
                         return;
@@ -121,15 +111,23 @@ function convertQuery(node: any, level: number, output: [string, number][], opti
                 }
 
                 // Check if the object would be empty
-                if (value && Object.keys(value).filter(k => value[k] !== false || options.includeFalsyKeys).length === 0) {
+                if (
+                    value &&
+                    Object.keys(value).filter(
+                        (k) => value[k] !== false || options.includeFalsyKeys
+                    ).length === 0
+                ) {
                     // If so, we don't include it into the query
                     return;
                 }
 
-                const fieldCount = Object.keys(value)
-                    .filter((keyCount) => filterNonConfigFields(keyCount, options.ignoreFields!)).length;
+                const fieldCount = Object.keys(value).filter((keyCount) =>
+                    filterNonConfigFields(keyCount, options.ignoreFields!)
+                ).length;
                 const subFields = fieldCount > 0;
-                const argsExist = typeof value.__args === 'object' && Object.keys(value.__args).length > 0;
+                const argsExist =
+                    typeof value.__args === 'object' &&
+                    Object.keys(value.__args).length > 0;
                 const directivesExist = typeof value.__directives === 'object';
                 const fullFragmentsExist = value.__all_on instanceof Array;
                 const partialFragmentsExist = typeof value.__on === 'object';
@@ -144,29 +142,38 @@ function convertQuery(node: any, level: number, output: [string, number][], opti
                     token = `${token}: ${value.__aliasFor}`;
                 }
 
-                if (typeof value.__variables === 'object' && Object.keys(value.__variables).length > 0) {
+                if (
+                    typeof value.__variables === 'object' &&
+                    Object.keys(value.__variables).length > 0
+                ) {
                     token = `${token} (${buildVariables(value.__variables)})`;
-                }
-                else if (argsExist || directivesExist) {
+                } else if (argsExist || directivesExist) {
                     let argsStr = '';
                     let dirsStr = '';
                     if (directivesExist) {
                         dirsStr = Object.entries(value.__directives)
-                            .map(item => `@${buildDirectives({ [item[0]]: item[1] }, options, level + 1)}`)
-                            .join(' ')
+                            .map(
+                                (item) =>
+                                    `@${buildDirectives({ [item[0]]: item[1] })}`
+                            )
+                            .join(' ');
                     }
                     if (argsExist) {
-                        if (options.pretty && Object.keys(value.__args).length > 1) {
-                            argsStr = `(\n${buildArgs(value.__args, options, level)}\n${getIndent(level)})`;
-                        } else {
-                            argsStr = `(${buildArgs(value.__args, options)})`;
-                        }
+                        argsStr = `(${buildArgs(value.__args)})`;
                     }
                     const spacer = directivesExist && argsExist ? ' ' : '';
                     token = `${token} ${argsStr}${spacer}${dirsStr}`;
                 }
 
-                output.push([token + (subFields || partialFragmentsExist || fullFragmentsExist ? ' {' : ''), level]);
+                output.push([
+                    token +
+                        (subFields ||
+                        partialFragmentsExist ||
+                        fullFragmentsExist
+                            ? ' {'
+                            : ''),
+                    level,
+                ]);
                 convertQuery(value, level + 1, output, options);
 
                 if (fullFragmentsExist) {
@@ -175,12 +182,17 @@ function convertQuery(node: any, level: number, output: [string, number][], opti
                     });
                 }
                 if (partialFragmentsExist) {
-                    const inlineFragments: { __typeName: string }[]
-                        = value.__on instanceof Array ? value.__on : [value.__on];
+                    const inlineFragments: { __typeName: string }[] =
+                        value.__on instanceof Array ? value.__on : [value.__on];
                     inlineFragments.forEach((inlineFragment) => {
                         const name = inlineFragment.__typeName;
                         output.push([`... on ${name} {`, level + 1]);
-                        convertQuery(inlineFragment, level + 2, output, options);
+                        convertQuery(
+                            inlineFragment,
+                            level + 2,
+                            output,
+                            options
+                        );
                         output.push(['}', level + 1]);
                     });
                 }
@@ -188,7 +200,6 @@ function convertQuery(node: any, level: number, output: [string, number][], opti
                 if (subFields || partialFragmentsExist || fullFragmentsExist) {
                     output.push(['}', level]);
                 }
-
             } else if (options.includeFalsyKeys === true || value) {
                 output.push([`${key}`, level]);
             }
@@ -201,7 +212,10 @@ export interface IJsonToGraphQLOptions {
     includeFalsyKeys?: boolean;
 }
 
-export function jsonToGraphQLQuery(query: any, options: IJsonToGraphQLOptions = {}) {
+export function jsonToGraphQLQuery(
+    query: any,
+    options: IJsonToGraphQLOptions = {}
+) {
     if (!query || typeof query != 'object') {
         throw new Error('query object not specified');
     }
@@ -212,19 +226,91 @@ export function jsonToGraphQLQuery(query: any, options: IJsonToGraphQLOptions = 
         options.ignoreFields = [];
     }
 
-    const queryLines: [string, number][] = [];
+    let queryLines: [string, number][] = [];
     convertQuery(query, 0, queryLines, options);
+
+    queryLines = dropEmptyObjects(queryLines);
 
     let output = '';
     queryLines.forEach(([line, level]) => {
         if (options.pretty) {
-            if (output) { output += '\n'; }
+            if (output) {
+                output += '\n';
+            }
             output += getIndent(level) + line;
-        }
-        else {
-            if (output) { output += ' '; }
+        } else {
+            if (output) {
+                output += ' ';
+            }
             output += line;
         }
     });
+    return output;
+}
+
+type InputItem = [string, number];
+type OutputItem = [string, number];
+
+interface IContext {
+    indent: number;
+    text: string | null;
+    isEmpty: boolean;
+    contents: Array<IContext | string>;
+}
+
+function dropEmptyObjects(inputList: Array<InputItem>): Array<OutputItem> {
+    const rootContext: IContext = {
+        indent: -1,
+        text: null,
+        isEmpty: true,
+        contents: [],
+    };
+
+    const stack: IContext[] = [rootContext];
+
+    for (let [text, indent] of inputList) {
+        text = text.trim();
+        if (text.endsWith('{')) {
+            const context: IContext = {
+                indent: indent,
+                text: text,
+                isEmpty: true,
+                contents: [],
+            };
+            stack[stack.length - 1].contents.push(context);
+            stack.push(context);
+        } else if (text === '}') {
+            const context = stack.pop()!;
+            if (context.isEmpty) {
+                // Remove the context from its parent's contents
+                stack[stack.length - 1].contents.pop();
+            } else {
+                // Mark the parent as not empty
+                stack[stack.length - 1].isEmpty = false;
+            }
+        } else {
+            // It's a field, add it to the current context
+            stack[stack.length - 1].contents.push(text);
+            stack[stack.length - 1].isEmpty = false;
+        }
+    }
+
+    const output: OutputItem[] = [];
+
+    function traverse(context: IContext): void {
+        for (const item of context.contents) {
+            if (typeof item === 'object') {
+                // It's a context
+                output.push([item.text!, item.indent]);
+                traverse(item);
+                output.push(['}', item.indent]);
+            } else {
+                // It's a field (string)
+                output.push([item, context.indent + 1]);
+            }
+        }
+    }
+
+    traverse(rootContext);
     return output;
 }
